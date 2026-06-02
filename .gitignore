@@ -1,4 +1,11 @@
 node_modules/
 .next/
 .env
+<<<<<<< HEAD
 dist/
+=======
+.env.local
+node_modules
+.next
+out
+>>>>>>> 7eca9d9 (Make new Changes)

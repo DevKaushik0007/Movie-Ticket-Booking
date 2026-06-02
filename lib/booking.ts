@@ -1,22 +1,20 @@
+import { TmdbMovie, tmdbApi } from './tmdb';
 
-export interface Show {
+export interface Theater {
   id: string;
-  title: string;
-  description: string;
-  duration: string;
-  rating: string;
-  genre: string;
-  language: string;
-  image: string;
-  showtimes: Showtime[];
+  name: string;
+  location: string;
+  facilities: string[];
 }
 
 export interface Showtime {
   id: string;
+  theaterId: string;
   time: string;
   date: string;
   price: number;
   availableSeats: number;
+  format: 'Standard' | 'IMAX 3D' | '4DX';
 }
 
 export interface Seat {
@@ -32,7 +30,8 @@ export interface Seat {
 export interface Booking {
   id: string;
   userId: string;
-  showId: string;
+  movieId: number;
+  theaterId: string;
   showtimeId: string;
   seats: Seat[];
   totalAmount: number;
@@ -48,10 +47,17 @@ export interface Receipt {
   paymentMethod: string;
   transactionId: string;
   date: string;
-  showTitle: string;
+  movieTitle: string;
+  theaterName: string;
   seats: string[];
   showtime: string;
 }
+
+const LOCATIONS = ['Mumbai', 'Delhi', 'Bengaluru', 'Hyderabad', 'Chennai', 'Pune'];
+
+const THEATER_NAMES = [
+  'PVR Cinemas', 'INOX', 'Cinepolis', 'Miraj Cinemas', 'Carnival Cinemas', 'Mukta A2'
+];
 
 class BookingService {
   private static instance: BookingService;
@@ -66,110 +72,91 @@ class BookingService {
     return BookingService.instance;
   }
 
-  getShows(): Show[] {
-    return [
-      {
-        id: '1',
-        title: 'Avengers: Endgame',
-        description: 'The epic conclusion to the Marvel Cinematic Universe\'s Infinity Saga brings together all the heroes for the ultimate battle.',
-        duration: '3h 1m',
-        rating: '8.4',
-        genre: 'Action, Adventure, Drama',
-        language: 'English',
-        image: 'https://readdy.ai/api/search-image?query=Avengers%20Endgame%20movie%20poster%20with%20dark%20cosmic%20background%2C%20superhero%20team%20assembled%2C%20dramatic%20lighting%2C%20high%20quality%20movie%20poster%20design%20with%20clean%20minimal%20background&width=400&height=600&seq=avengers1&orientation=portrait',
-        showtimes: [
-          { id: '1-1', time: '10:00 AM', date: '2024-01-15', price: 250, availableSeats: 120 },
-          { id: '1-2', time: '2:00 PM', date: '2024-01-15', price: 300, availableSeats: 120 },
-          { id: '1-3', time: '6:00 PM', date: '2024-01-15', price: 350, availableSeats: 120 }
-        ]
-      },
-      {
-        id: '2',
-        title: 'The Dark Knight',
-        description: 'Batman faces his greatest challenge yet as the Joker wreaks havoc on Gotham City in this critically acclaimed superhero thriller.',
-        duration: '2h 32m',
-        rating: '9.0',
-        genre: 'Action, Crime, Drama',
-        language: 'English',
-        image: 'https://readdy.ai/api/search-image?query=The%20Dark%20Knight%20movie%20poster%20with%20Batman%20silhouette%20against%20Gotham%20city%20skyline%2C%20dark%20moody%20atmosphere%2C%20minimal%20clean%20background%2C%20professional%20movie%20poster%20design&width=400&height=600&seq=batman1&orientation=portrait',
-        showtimes: [
-          { id: '2-1', time: '11:00 AM', date: '2024-01-15', price: 280, availableSeats: 150 },
-          { id: '2-2', time: '3:00 PM', date: '2024-01-15', price: 320, availableSeats: 150 },
-          { id: '2-3', time: '7:00 PM', date: '2024-01-15', price: 380, availableSeats: 150 }
-        ]
-      },
-      {
-        id: '3',
-        title: 'Spider-Man: No Way Home',
-        description: 'Peter Parker\'s secret identity is revealed, leading to unprecedented consequences and a multiverse-spanning adventure.',
-        duration: '2h 28m',
-        rating: '8.2',
-        genre: 'Action, Adventure, Fantasy',
-        language: 'English',
-        image: 'https://readdy.ai/api/search-image?query=Spider-Man%20No%20Way%20Home%20movie%20poster%20with%20multiple%20Spider-Man%20figures%2C%20web%20patterns%2C%20dynamic%20action%20pose%2C%20clean%20minimal%20background%2C%20modern%20movie%20poster%20design&width=400&height=600&seq=spiderman1&orientation=portrait',
-        showtimes: [
-          { id: '3-1', time: '9:30 AM', date: '2024-01-15', price: 300, availableSeats: 180 },
-          { id: '3-2', time: '1:30 PM', date: '2024-01-15', price: 350, availableSeats: 180 },
-          { id: '3-3', time: '5:30 PM', date: '2024-01-15', price: 400, availableSeats: 180 }
-        ]
-      },
-      {
-        id: '4',
-        title: 'Inception',
-        description: 'A thief who enters people\'s dreams to steal secrets is given the inverse task of planting an idea in someone\'s mind.',
-        duration: '2h 28m',
-        rating: '8.8',
-        genre: 'Action, Sci-Fi, Thriller',
-        language: 'English',
-        image: 'https://readdy.ai/api/search-image?query=Inception%20movie%20poster%20with%20surreal%20dream-like%20architecture%2C%20floating%20city%20elements%2C%20mysterious%20atmosphere%2C%20clean%20minimal%20background%2C%20sophisticated%20movie%20poster%20design&width=400&height=600&seq=inception1&orientation=portrait',
-        showtimes: [
-          { id: '4-1', time: '10:30 AM', date: '2024-01-15', price: 270, availableSeats: 140 },
-          { id: '4-2', time: '2:30 PM', date: '2024-01-15', price: 320, availableSeats: 140 },
-          { id: '4-3', time: '6:30 PM', date: '2024-01-15', price: 370, availableSeats: 140 }
-        ]
-      },
-      {
-        id: '5',
-        title: 'Interstellar',
-        description: 'A team of explorers travel through a wormhole in space in an attempt to ensure humanity\'s survival.',
-        duration: '2h 49m',
-        rating: '8.6',
-        genre: 'Adventure, Drama, Sci-Fi',
-        language: 'English',
-        image: 'https://readdy.ai/api/search-image?query=Interstellar%20movie%20poster%20with%20space%20exploration%20theme%2C%20cosmic%20wormhole%2C%20astronaut%20figure%2C%20deep%20space%20atmosphere%2C%20clean%20minimal%20background%2C%20epic%20movie%20poster%20design&width=400&height=600&seq=interstellar1&orientation=portrait',
-        showtimes: [
-          { id: '5-1', time: '9:00 AM', date: '2024-01-15', price: 280, availableSeats: 160 },
-          { id: '5-2', time: '1:00 PM', date: '2024-01-15', price: 330, availableSeats: 160 },
-          { id: '5-3', time: '5:00 PM', date: '2024-01-15', price: 380, availableSeats: 160 }
-        ]
-      }
-    ];
+  getLocations(): string[] {
+    return LOCATIONS;
   }
 
-  getShow(id: string): Show | undefined {
-    return this.getShows().find(show => show.id === id);
+  // Dynamically generate 3-5 theaters for a given location
+  getTheatersByLocation(location: string): Theater[] {
+    // deterministic based on location string length just to be stable
+    const count = 3 + (location.length % 3); 
+    const theaters: Theater[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const nameIndex = (location.length + i) % THEATER_NAMES.length;
+      theaters.push({
+        id: `th-${location.toLowerCase()}-${i}`,
+        name: `${THEATER_NAMES[nameIndex]} ${location} Mall`,
+        location: location,
+        facilities: ['Recliner', 'Food & Beverage', i % 2 === 0 ? 'IMAX' : 'Dolby Atmos']
+      });
+    }
+    return theaters;
+  }
+
+  // Dynamically generate showtimes for a specific movie in a specific location
+  async getShowtimes(movieId: number, location: string, date: string): Promise<{ theater: Theater, showtimes: Showtime[] }[]> {
+    const theaters = this.getTheatersByLocation(location);
+    const result = [];
+
+    // AuraCinema Realism: Deterministically assign movies to only 50% of theaters in a city
+    // This makes it feel "real" as not every theater has every movie
+    const movieParity = movieId % 2;
+
+    for (let i = 0; i < theaters.length; i++) {
+      if ((i + movieParity) % 2 !== 0) continue;
+
+      const theater = theaters[i];
+      const seed = movieId + date.length;
+      const showtimesCount = 2 + ((seed + i) % 4);
+      const showtimes: Showtime[] = [];
+      let baseHour = 9 + ((seed + i) % 3);
+
+      for (let j = 0; j < showtimesCount; j++) {
+        const timeValue = baseHour + (j * 3);
+        const ampm = timeValue >= 12 ? 'PM' : 'AM';
+        const displayHour = timeValue > 12 ? timeValue - 12 : timeValue;
+        const timeString = `${displayHour}:00 ${ampm}`;
+        const isImax = theater.facilities.includes('IMAX') && j % 2 === 0;
+
+        showtimes.push({
+          id: `st-${theater.id}-${movieId}-${date}-${timeValue}`,
+          theaterId: theater.id,
+          time: timeString,
+          date: date,
+          price: isImax ? 550 : 250 + ((j % 3) * 50),
+          availableSeats: 120,
+          format: isImax ? 'IMAX 3D' : (j % 3 === 0 ? '4DX' : 'Standard')
+        });
+      }
+      result.push({ theater, showtimes });
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 400));
+    return result;
   }
 
   generateSeats(showtimeId: string): Seat[] {
     const seats: Seat[] = [];
-    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-    const seatsPerRow = 12;
+    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+    const seatsPerRow = 16;
     
     const bookedSeatsForShowtime = this.bookedSeats.get(showtimeId) || new Set();
+    const basePrice = 250;
     
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
       const row = rows[rowIndex];
       for (let seatNum = 1; seatNum <= seatsPerRow; seatNum++) {
         const seatId = `${row}${seatNum}`;
         let type: 'regular' | 'premium' | 'vip' = 'regular';
-        let price = 250;
+        let price = basePrice;
         
-        if (rowIndex >= 7) {
-          type = 'vip';
-          price = 400;
-        } else if (rowIndex >= 4) {
-          type = 'premium';
-          price = 320;
+        if (rowIndex <= 2) {
+          type = 'vip'; // Recliner (Top 3 rows)
+          price = basePrice + 200;
+        } else if (rowIndex <= 7) {
+          type = 'premium'; // Prime (Rows 4-8)
+          price = basePrice + 80;
         }
         
         seats.push({
@@ -183,7 +170,6 @@ class BookingService {
         });
       }
     }
-    
     return seats;
   }
 
@@ -206,7 +192,7 @@ class BookingService {
     return newBooking;
   }
 
-  confirmBooking(bookingId: string, paymentId: string): Receipt {
+  async confirmBooking(bookingId: string, paymentId: string): Promise<Receipt> {
     const booking = this.bookings.find(b => b.id === bookingId);
     if (!booking) {
       throw new Error('Booking not found');
@@ -215,19 +201,33 @@ class BookingService {
     booking.status = 'confirmed';
     booking.paymentId = paymentId;
     
-    const show = this.getShow(booking.showId);
-    const showtime = show?.showtimes.find(st => st.id === booking.showtimeId);
+    const movie = await tmdbApi.getMovieDetails(booking.movieId);
+    // Find theater
+    let theaterName = 'Unknown Theater';
+    let showtimeStr = 'Unknown Time';
+    
+    // Just a mock extraction from ID for display
+    const theaterMatch = booking.theaterId.split('-')[1];
+    if (theaterMatch) {
+        theaterName = `Cinema ${theaterMatch.toUpperCase()}`;
+    }
+    // Extact time from showtime ID
+    const timeMatch = booking.showtimeId.split('-').pop();
+    if(timeMatch) {
+       showtimeStr = `${timeMatch}:00`;
+    }
     
     const receipt: Receipt = {
-      id: Date.now().toString(),
+      id: `rcpt-${Date.now()}`,
       bookingId: booking.id,
       amount: booking.totalAmount,
       paymentMethod: 'Razorpay',
       transactionId: paymentId,
       date: new Date().toISOString(),
-      showTitle: show?.title || 'Unknown Show',
+      movieTitle: movie?.title || 'Unknown Movie',
+      theaterName: theaterName,
       seats: booking.seats.map(seat => `${seat.row}${seat.number}`),
-      showtime: showtime ? `${showtime.date} ${showtime.time}` : 'Unknown Time'
+      showtime: showtimeStr // simplified for mock
     };
     
     this.receipts.push(receipt);
